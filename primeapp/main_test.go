@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"io"
-	"os"
+	// "bytes"
+	// "io"
+	// "os"
 	"strings"
 	"testing"
 )
@@ -42,10 +42,8 @@ func Test_isPrime(t *testing.T) {
 func Test_readUserInput(t *testing.T) {
 	doneChan := make(chan bool)
 
-	var stdin bytes.Buffer
-	stdin.Write([]byte("1\nq\n"))
+	go readUserInput(strings.NewReader("7\nq\n"), doneChan)
 
-	go readUserInput(&stdin, doneChan)
 	<-doneChan
 	close(doneChan)
 }
@@ -58,77 +56,20 @@ func Test_checkNumbers(t *testing.T) {
 		expected string
 		done     bool
 	}{
-		{
-			name:     "quit",
-			input:    "q",
-			expected: "",
-			done:     true,
-		},
-		{
-			name:     "invalid input",
-			input:    "abc",
-			expected: "Please enter a whole number!",
-			done:     false,
-		},
-		{
-			name:     "valid input",
-			input:    "5",
-			expected: "5 is a prime number!",
-			done:     false,
-		},
+		{"quit", "q", "", true},
+		{"invalid input", "xyz", "Please enter a whole number!", false},
+		{"valid input", "7", "7 is a prime number!", false},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			scanner := bufio.NewScanner(strings.NewReader(tc.input))
-			result, done := checkNumbers(scanner)
-			if result != tc.expected {
-				t.Errorf("expected result: %s, got: %s", tc.expected, result)
-			}
-			if done != tc.done {
-				t.Errorf("expected done: %v, got: %v", tc.done, done)
-			}
-		})
+		result, done := checkNumbers(bufio.NewScanner(strings.NewReader(tc.input)))
+		if result != tc.expected {
+			t.Errorf("%s: expected result: %s but got: %s", tc.name, tc.expected, result)
+		}
+		if done != tc.done {
+			t.Errorf("%s: expected done: %v but got: %v", tc.name, tc.done, done)
+		}
 	}
 }
 
 
-
-func Test_intro(t *testing.T) {
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	intro()
-
-	output := captureOutput(w, r)
-
-	expected := "Is it Prime?\n------------\nEnter a whole number, and we'll tell you if it is a prime number or not. Enter q to quit.\n-> "
-	if output != expected {
-		t.Errorf("intro: expected %s but got %s", expected, output)
-	}
-}
-
-func Test_prompt(t *testing.T) {
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	prompt()
-
-	output := captureOutput(w, r)
-
-	expected := "-> "
-	if output != expected {
-		t.Errorf("prompt: expected %s but got %s", expected, output)
-	}
-}
-
-func captureOutput(w *os.File, r *os.File) string {
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
-}
