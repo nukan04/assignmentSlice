@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	// "bytes"
-	// "io"
-	// "os"
+	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -42,11 +42,37 @@ func Test_isPrime(t *testing.T) {
 func Test_readUserInput(t *testing.T) {
 	doneChan := make(chan bool)
 
-	go readUserInput(strings.NewReader("7\nq\n"), doneChan)
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldStdout := os.Stdout
+	defer func() {
+		os.Stdout = oldStdout
+	}()
+
+	os.Stdout = w
+
+	go readUserInput(bufio.NewReader(r), doneChan)
+
+	w.WriteString("7\n")
+	w.WriteString("q\n")
 
 	<-doneChan
 	close(doneChan)
+
+	w.Close()
+
+	var buf bytes.Buffer
+	scanner := bufio.NewScanner(&buf)
+	for scanner.Scan() {
+		output := scanner.Text()
+		if output != "-> 7 is a prime number!" && output != "-> Goodbye." {
+			t.Errorf("Test_readUserInput: expected either \"-> 7 is a prime number!\" or \"-> Goodbye.\" but got %s", output)
+		}
+	}
 }
+
 
 
 func Test_checkNumbers(t *testing.T) {
@@ -72,4 +98,41 @@ func Test_checkNumbers(t *testing.T) {
 	}
 }
 
+func Test_intro(t *testing.T) {
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
+	intro()
+
+	output := captureOutput(w, r)
+
+	expected := "Is it Prime?\n------------\nEnter a whole number, and we'll tell you if it is a prime number or not. Enter q to quit.\n-> "
+	if output != expected {
+		t.Errorf("intro: expected %s but got %s", expected, output)
+	}
+}
+
+func Test_prompt(t *testing.T) {
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	prompt()
+
+	output := captureOutput(w, r)
+
+	expected := "-> "
+	if output != expected {
+		t.Errorf("prompt: expected %s but got %s", expected, output)
+	}
+}
+
+func captureOutput(w *os.File, r *os.File) string {
+	w.Close()
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	return buf.String()
+}
