@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"alexxx.go-cleanArch/pkg/store/postgres"
-	"alexxx.go-cleanArch/services/contact/internal/domain"
+	"nurda/pkg/store/postgres"
+	"nurda/services/contact/internal/domain"
 )
 
 func main() {
@@ -23,9 +23,9 @@ func main() {
 
 	defer db.Close()
 
-	nikita := domain.NewContact("Fedenko", "Alexey", "Demyanovich")
-	aida := domain.NewContact("Nurdaulet", "Kuatov", "Ivanovich")
+	alexey := domain.NewContact("Fedenko", "Alexey", "Demyanovich")
+	nurda := domain.NewContact("Nurdaulet", "Kuatov", "Nurbolatovich")
 	group1 := domain.NewGroup("Students")
 
-	fmt.Println(nikita, aida, group1)
+	fmt.Println(alexey, nurda, group1)
 }

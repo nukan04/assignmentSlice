@@ -1,4 +1,4 @@
-module alexxx.go-cleanArch
+module nurda
 
 go 1.19
 
